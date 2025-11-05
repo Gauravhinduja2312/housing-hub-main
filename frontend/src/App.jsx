@@ -6,7 +6,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
 
 // --- API & WEBSOCKET CONFIGURATION ---
-const API_URL = 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 export const WEBSOCKET_URL = API_URL.replace(/^http/, 'ws');
 const api = axios.create({ baseURL: API_URL });
 
