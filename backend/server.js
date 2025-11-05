@@ -3,7 +3,7 @@ const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const bodyParser = require('body-parser');
-const cors = require('cors');
+const cors = require('cors'); // <-- Correctly required
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
@@ -92,9 +92,21 @@ const Review = mongoose.model('Review', ReviewSchema);
 cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET, secure: true });
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-app.use(cors());
+
+// ⬇️ THIS IS THE SECURE CORS CONFIGURATION ⬇️
+const corsOptions = {
+    origin: [
+        'https://housing-hub-frontend-main.onrender.com', // Your deployed frontend
+        'http://localhost:3000'                           // Your local dev frontend
+    ],
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+// ⬆️ This replaces your old 'app.use(cors())' ⬆️
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json()); // This was in your original file, good to have.
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -915,4 +927,3 @@ Here are the rules:
 server.listen(PORT, () => {
     console.log(`Backend server with WebSocket running on http://localhost:${PORT}`);
 });
-
