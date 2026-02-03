@@ -21,16 +21,17 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Only logout if the error is explicitly "Invalid Token" or "Unauthorized"
+  (error) => 
+    {
     if (error.response && error.response.status === 401) {
-      console.error("Session expired or invalid token:", error.response.data);
+      console.error("Token rejected by backend:", error.response.data);
       
-      // OPTIONAL: Comment this out temporarily to debug! 
-      // If you comment this out, the app won't redirect, and you can see the error in Console.
+      
       localStorage.removeItem('token');
       localStorage.removeItem('currentUser');
-      window.location.href = '/login'; 
+      
+      // COMMENT THIS OUT TEMPORARILY:
+      // window.location.href = '/login';  <-- Disable this!
     }
     return Promise.reject(error);
   }
