@@ -1842,20 +1842,33 @@ const AuthForm = ({ isLogin }) => {
         setLoading(true);
         const endpoint = isLogin ? '/api/login' : '/api/signup';
         const payload = isLogin ? { email, password } : { username, email, password, userType };
+        
         try {
             const { data } = await api.post(endpoint, payload);
-            setCurrentUser({ 
-                email: data.email, 
-                uid: data.userId, 
-                userType: data.userType, 
+
+            // --- STEP 1: Create the user object manually ---
+            // We pull the fields directly from 'data' just like you did for setCurrentUser
+            const userData = {
+                email: data.email,
+                uid: data.userId, // Make sure backend sends 'userId' (not '_id')
+                userType: data.userType,
                 username: data.username,
                 profilePictureUrl: data.profilePictureUrl,
                 bio: data.bio
-            });
+            };
+
+            // --- STEP 2: Update State ---
+            setCurrentUser(userData);
+
+            // --- STEP 3: Update Storage (THE FIX) ---
             localStorage.setItem("token", data.token);
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            
+            // NOW we save the 'userData' object we created above, NOT 'data.user'
+            localStorage.setItem('currentUser', JSON.stringify(userData)); 
+
             navigate("/");
         } catch (err) {
+            console.error("Login Error:", err); // Added console log for debugging
             setError(err.response?.data?.message || 'An error occurred.');
         } finally {
             setLoading(false);
