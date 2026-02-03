@@ -26,7 +26,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.error("Token rejected by backend:", error.response.data);
       
-      
+
       localStorage.removeItem('token');
       localStorage.removeItem('currentUser');
       
@@ -44,23 +44,23 @@ const NotificationContext = createContext();
 const WebSocketContext = createContext(null);
 const FilterContext = createContext();
 
-// --- PROVIDERS ---
+
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // 1. One single useEffect to handle startup
+    // 1. Startup Logic: Checks for existing session
     useEffect(() => {
         const initializeAuth = () => {
             try {
                 const storedUser = localStorage.getItem("currentUser");
                 const token = localStorage.getItem("token");
 
-                // Check if BOTH exist before logging in
+                // Check if BOTH the user object and token exist
                 if (storedUser && token) {
                     setCurrentUser(JSON.parse(storedUser));
                 } else {
-                    // If either is missing, clear everything to be safe
+                    // If either is missing, clean up to prevent errors
                     localStorage.removeItem("token");
                     localStorage.removeItem("currentUser");
                     setCurrentUser(null);
@@ -77,7 +77,15 @@ export const AuthProvider = ({ children }) => {
         initializeAuth();
     }, []);
 
-    // 2. Corrected Logout: Clears storage AND state
+    // 2. Login Helper: Call this from your Login Page!
+    // This ensures data is saved consistently every time.
+    const login = (user, token) => {
+        localStorage.setItem("token", token);
+        localStorage.setItem("currentUser", JSON.stringify(user));
+        setCurrentUser(user);
+    };
+
+    // 3. Logout Helper
     const logout = useCallback(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("currentUser");
@@ -85,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ currentUser, setCurrentUser, logout, loading }}>
+        <AuthContext.Provider value={{ currentUser, login, logout, loading, setCurrentUser }}>
             {!loading && children}
         </AuthContext.Provider>
     );
@@ -1845,6 +1853,7 @@ const AuthForm = ({ isLogin }) => {
                 bio: data.bio
             });
             localStorage.setItem("token", data.token);
+            localStorage.setItem('currentUser', JSON.stringify(response.data.user));
             navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred.');
