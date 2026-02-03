@@ -46,45 +46,40 @@ export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // 1. One single useEffect to handle startup
     useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem("currentUser");
-            if (storedUser) setCurrentUser(JSON.parse(storedUser));
-        } catch (error) {
-            console.error("Failed to parse stored user", error);
-            localStorage.clear();
-        }
-        setLoading(false);
+        const initializeAuth = () => {
+            try {
+                const storedUser = localStorage.getItem("currentUser");
+                const token = localStorage.getItem("token");
+
+                // Check if BOTH exist before logging in
+                if (storedUser && token) {
+                    setCurrentUser(JSON.parse(storedUser));
+                } else {
+                    // If either is missing, clear everything to be safe
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("currentUser");
+                    setCurrentUser(null);
+                }
+            } catch (error) {
+                console.error("Auth initialization failed:", error);
+                localStorage.clear();
+                setCurrentUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
     }, []);
 
-useEffect(() => {
-    const initializeAuth = () => {
-        try {
-            const storedUser = localStorage.getItem("currentUser");
-            const token = localStorage.getItem("token");
-
-            if (storedUser && token) {
-                // RESTORE the session if both exist
-                setCurrentUser(JSON.parse(storedUser));
-            } else {
-                // Only clear if data is missing
-                setCurrentUser(null);
-            }
-        } catch (error) {
-            console.error("Auth initialization failed:", error);
-            localStorage.clear();
-            setCurrentUser(null);
-        } 
-        finally {
-            setLoading(false);
-        }
-    };
-    
-    initializeAuth();
-}, []);
-
-
-    const logout = useCallback(() => setCurrentUser(null), []);
+    // 2. Corrected Logout: Clears storage AND state
+    const logout = useCallback(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("currentUser");
+        setCurrentUser(null);
+    }, []);
 
     return (
         <AuthContext.Provider value={{ currentUser, setCurrentUser, logout, loading }}>
