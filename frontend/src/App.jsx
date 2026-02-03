@@ -22,13 +22,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      localStorage.removeItem('currentUser');
+    // Only logout if the error is explicitly "Invalid Token" or "Unauthorized"
+    if (error.response && error.response.status === 401) {
+      console.error("Session expired or invalid token:", error.response.data);
+      
+      // OPTIONAL: Comment this out temporarily to debug! 
+      // If you comment this out, the app won't redirect, and you can see the error in Console.
       localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        toast.error("Your session has expired. Please log in again.");
-        window.location.href = '/login';
-      }
+      localStorage.removeItem('currentUser');
+      window.location.href = '/login'; 
     }
     return Promise.reject(error);
   }
