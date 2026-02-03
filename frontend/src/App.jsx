@@ -1853,7 +1853,7 @@ const AuthForm = ({ isLogin }) => {
                 bio: data.bio
             });
             localStorage.setItem("token", data.token);
-            localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
             navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred.');
