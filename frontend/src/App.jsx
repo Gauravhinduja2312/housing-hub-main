@@ -1937,8 +1937,7 @@ const ProfileView = () => {
 };
 
 
-const AuthForm = ({ isLogin }) => {
-    // --- ADMIN DASHBOARD COMPONENT ---
+// --- ADMIN DASHBOARD COMPONENT ---
 const AdminDashboard = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1956,7 +1955,7 @@ const AdminDashboard = () => {
 
     const fetchRequests = async () => {
         try {
-            // 2. Use 'api' instead of 'axios' to automatically send the Token
+            // 2. Use 'api' variable (already defined in App.jsx) to send Token
             const { data } = await api.get('/api/admin/verifications'); 
             setRequests(data);
         } catch (error) {
@@ -2032,6 +2031,9 @@ const AdminDashboard = () => {
         </div>
     );
 };
+
+const AuthForm = ({ isLogin }) => {
+
     const { setCurrentUser } = useAuth();
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
