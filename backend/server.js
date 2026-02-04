@@ -41,9 +41,33 @@ const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
-    user_type: { type: String, enum: ['student', 'landlord'], required: true },
+    
+    // I added 'admin' here so you can verify people later
+    user_type: { 
+        type: String, 
+        enum: ['student', 'landlord', 'admin'], 
+        required: true 
+    },
+    
     profilePictureUrl: { type: String, default: '' },
     bio: { type: String, default: '', maxLength: 250 },
+
+    // --- NEW VERIFICATION FIELDS (Start) ---
+    isVerified: { 
+        type: Boolean, 
+        default: false 
+    },
+    verificationStatus: {
+        type: String,
+        enum: ['none', 'pending', 'approved', 'rejected'],
+        default: 'none'
+    },
+    verificationDocument: { 
+        type: String, 
+        default: '' // We will save the image URL here later
+    },
+    // --- NEW VERIFICATION FIELDS (End) ---
+
 }, { timestamps: true });
 
 const PropertySchema = new mongoose.Schema({
