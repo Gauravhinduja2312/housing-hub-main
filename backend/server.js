@@ -11,6 +11,29 @@ const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
 const fetch = require('node-fetch');
 
+// --- SECURITY MIDDLEWARE (Paste this near the top) ---
+const jwt = require('jsonwebtoken'); // Ensure this is imported
+
+const requireAuth = (req, res, next) => {
+    // 1. Get the token from the header (Bearer <token>)
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    // 2. If no token, kick them out
+    if (token == null) return res.status(401).json({ message: "Authentication required" });
+
+    // 3. Verify the token
+    // IMPORTANT: Make sure 'your_secret_key' matches what you used in /api/login
+    jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key', (err, user) => {
+        if (err) return res.status(403).json({ message: "Token invalid or expired" });
+        
+        // 4. Token is good! Save user info and let them in
+        req.user = user;
+        next();
+    });
+};
+// ---------------------------------------------------
+
 // --- Database Connection ---
 const connectDB = async () => {
     if (!process.env.MONGO_URI) {
