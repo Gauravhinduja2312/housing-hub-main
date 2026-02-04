@@ -2064,7 +2064,9 @@ const AuthForm = ({ isLogin }) => {
                 userType: data.userType,
                 username: data.username,
                 profilePictureUrl: data.profilePictureUrl,
-                bio: data.bio
+                bio: data.bio,
+                isVerified: data.isVerified,          // Saves the checkmark
+                verificationStatus: data.verificationStatus // Saves "pending"/"approved"
             };
 
             // --- STEP 2: Update State ---

@@ -269,7 +269,8 @@ app.post("/api/login", async (req, res) => {
             return res.status(401).json({ message: "Invalid email or password." });
         }
         const token = jwt.sign({ userId: user._id, username: user.username, userType: user.user_type }, JWT_SECRET, { expiresIn: "1h" });
-        res.json({ token, userId: user._id, userType: user.user_type, username: user.username, email: user.email, profilePictureUrl: user.profilePictureUrl, bio: user.bio });
+        res.json({ token, userId: user._id, userType: user.user_type, username: user.username, email: user.email, profilePictureUrl: user.profilePictureUrl, bio: user.bio,isVerified: user.isVerified,
+    verificationStatus: user.verificationStatus});
     } catch (err) { res.status(500).json({ message: "Server error." }); }
 });
 
