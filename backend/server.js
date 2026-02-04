@@ -382,7 +382,16 @@ app.get('/api/properties/:id', async (req, res) => {
 });
 
 app.post('/api/properties', authenticateToken, upload.array('images', 5), async (req, res) => {
-    try {
+    try { 
+        const user = await User.findById(req.user.userId);
+
+        // 2. THE GATEKEEPER CHECK
+        if (user.userType === 'landlord' && !user.isVerified) {
+            return res.status(403).json({ 
+                message: "⛔ Access Denied: You must be a Verified Landlord to post properties. Please upload your ID in the Profile section." 
+            });
+        }
+        
         let imageUrls = [];
         if (req.files) {
             for(const file of req.files) {

@@ -393,10 +393,10 @@ const Header = () => {
                         </div>
                     )}
                 </div>
-                {useAuth().currentUser?.userType === 'landlord' && (
-                    <Link to="/add-property" className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
-                        <PlusCircle size={20} /><span>New Property</span>
-                    </Link>
+             {useAuth().currentUser?.userType === 'landlord' && useAuth().currentUser?.isVerified && (
+    <Link to="/add-property" className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+        <PlusCircle size={20} /><span>New Property</span>
+    </Link>
                 )}
             </div>
         </header>
@@ -889,6 +889,16 @@ const PropertiesView = () => {
 
 const AddPropertyView = () => {
     const navigate = useNavigate();
+    const { currentUser } = useAuth(); 
+
+    // --- ADD THIS BLOCK ---
+    useEffect(() => {
+        if (currentUser?.userType === 'landlord' && !currentUser.isVerified) {
+            toast.error("⛔ You must be verified to post properties!");
+            navigate('/profile'); // Send them to profile to verify
+        }
+    }, [currentUser, navigate]);
+    
     const [details, setDetails] = useState({ 
         title: '', description: '', address: '', city: '', price: '', 
         property_type: 'apartment', bedrooms: '', bathrooms: '', amenities: '',
@@ -1843,6 +1853,39 @@ const ProfileView = () => {
                             </div>
                         )}
 
+                                {/* CASE 4: REJECTED (Add this new block) */}
+                                {verificationStatus === 'rejected' && (
+                                    <div className="mt-4">
+                                        <div className="p-4 bg-red-900/20 border border-red-700/50 rounded-lg text-red-300 flex items-center gap-3 mb-4">
+                                            <div className="text-2xl">❌</div>
+                                            <div>
+                                                <p className="font-bold">Verification Rejected</p>
+                                                <p className="text-sm">Your ID was unclear or invalid. Please upload a valid Government ID.</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Allow them to upload again */}
+                                        <p className="text-slate-400 mb-2">Upload New ID Proof:</p>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleFileChange} 
+                                            className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+                                        />
+                                        
+                                        {verificationFile && (
+                                            <img src={verificationFile} alt="Preview" className="mt-4 w-32 h-32 object-cover rounded-lg border border-slate-600" />
+                                        )}
+
+                                        <button 
+                                            onClick={submitVerification} 
+                                            disabled={uploading}
+                                            className="mt-4 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-500 disabled:bg-slate-700"
+                                        >
+                                            {uploading ? "Uploading..." : "Resubmit Verification"}
+                                        </button>
+                                    </div>
+                                )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {statCards.map(stat => (
