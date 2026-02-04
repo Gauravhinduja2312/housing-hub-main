@@ -1082,6 +1082,8 @@ const EditPropertyView = () => {
 const PropertyDetailsView = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
+    const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+const [applicationMsg, setApplicationMsg] = useState('');
     const { propertyId } = useParams();
     const [property, setProperty] = useState(null);
     const [reviews, setReviews] = useState([]);
@@ -1134,6 +1136,20 @@ const PropertyDetailsView = () => {
             return () => { effectRan.current = true; };
         }
     }, [propertyId]);
+
+    const handleApply = async () => {
+    try {
+        await api.post('/api/applications', {
+            property_id: property._id,
+            landlord_id: property.landlord_id,
+            message: applicationMsg
+        });
+        toast.success("Application Sent! Good luck!");
+        setIsApplyModalOpen(false);
+    } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to apply");
+    }
+};
 
     const handleContact = async () => {
         try {
@@ -1226,6 +1242,17 @@ const PropertyDetailsView = () => {
                                 <MessageSquare className="mr-2" /> Contact Landlord
                             </button>
                         )}
+
+                        {currentUser?.userType === 'student' && (
+    <button 
+        onClick={() => setIsApplyModalOpen(true)}
+        className="w-full mt-3 bg-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-colors"
+    >
+        📝 Apply Now
+    </button>
+)}
+
+
                     </div>
                 </div>
             </div>
@@ -1305,6 +1332,25 @@ const PropertyDetailsView = () => {
                     )) : (
                         <p className="text-slate-400">No reviews yet. Be the first to leave one!</p>
                     )}
+
+{isApplyModalOpen && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-800 p-6 rounded-xl max-w-md w-full border border-slate-700">
+                        <h3 className="text-xl font-bold text-white mb-4">Apply for {property.title}</h3>
+                        <textarea
+                            value={applicationMsg}
+                            onChange={(e) => setApplicationMsg(e.target.value)}
+                            placeholder="Tell the landlord why you are a good tenant..."
+                            className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white mb-4 h-32"
+                        />
+                        <div className="flex gap-3">
+                            <button onClick={handleApply} className="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">Send Application</button>
+                            <button onClick={() => setIsApplyModalOpen(false)} className="flex-1 bg-slate-600 text-white font-bold py-2 rounded-lg">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+                    
                 </div>
             </div>
         </div>
@@ -1520,6 +1566,17 @@ const MessagesView = () => {
 };
 
 const ProfileView = () => {
+    // --- APPLICATIONS LOGIC ---
+    const [myApplications, setMyApplications] = useState([]);
+    
+    useEffect(() => {
+        // Fetch applications when the tab is clicked
+        if (activeTab === 'applications') {
+            api.get('/api/applications/student')
+               .then(res => setMyApplications(res.data))
+               .catch(err => console.error(err));
+        }
+    }, [activeTab]);
     const { currentUser, setCurrentUser, logout } = useAuth();
     const navigate = useNavigate();
     const [stats, setStats] = useState(null);
@@ -1718,6 +1775,9 @@ const ProfileView = () => {
             <div className="mb-8 border-b border-slate-700">
                 <nav className="-mb-px flex space-x-6">
                     <button onClick={() => setActiveTab('profile')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'profile' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-500'}`}>Profile</button>
+                    {currentUser.userType === 'student' && (
+                        <button onClick={() => setActiveTab('applications')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'applications' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'}`}>My Applications</button>
+                    )}
                     <button onClick={() => setActiveTab('security')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'security' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-500'}`}>Security</button>
                     <button onClick={() => setActiveTab('danger')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'danger' ? 'border-red-500 text-red-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-500'}`}>Danger Zone</button>
                 </nav>
@@ -1902,6 +1962,38 @@ const ProfileView = () => {
                             ))}
                         </div>
                     </>
+                )}
+
+                {/* 👇 ADD THIS BLOCK 👇 */}
+                {activeTab === 'applications' && (
+                    <div className="space-y-4">
+                        <h2 className="text-2xl font-bold text-white mb-4">My Applications</h2>
+                        {myApplications.length === 0 ? (
+                            <div className="p-8 text-center bg-slate-800/50 rounded-xl border border-slate-700 text-slate-400">
+                                You haven't applied to any properties yet.
+                            </div>
+                        ) : (
+                            myApplications.map(app => (
+                                <div key={app._id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                                    <div>
+                                        <h3 className="font-bold text-white text-lg">{app.property_id?.title || 'Property Deleted'}</h3>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <span>Landlord: {app.landlord_id?.username}</span>
+                                            <span>•</span>
+                                            <span>Sent: {new Date(app.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <p className="text-slate-500 text-sm mt-1 italic">"{app.message}"</p>
+                                    </div>
+                                    <span className={`px-4 py-2 rounded-full text-sm font-bold capitalize border ${
+                                        app.status === 'accepted' ? 'bg-green-900/30 text-green-300 border-green-700' : 
+                                        app.status === 'rejected' ? 'bg-red-900/30 text-red-300 border-red-700' : 'bg-orange-900/30 text-orange-300 border-orange-700'
+                                    }`}>
+                                        {app.status}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 )}
                 
                 {activeTab === 'security' && (

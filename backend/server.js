@@ -36,6 +36,17 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+// --- APPLICATION SCHEMA ---
+const ApplicationSchema = new mongoose.Schema({
+    property_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Property', required: true },
+    student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    landlord_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+    message: { type: String, default: '' }, // Student's note
+}, { timestamps: true });
+
+const Application = mongoose.model('Application', ApplicationSchema);
+
 // --- Mongoose Schemas ---
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, trim: true },
@@ -391,7 +402,7 @@ app.post('/api/properties', authenticateToken, upload.array('images', 5), async 
                 message: "⛔ Access Denied: You must be a Verified Landlord to post properties. Please upload your ID in the Profile section." 
             });
         }
-        
+
         let imageUrls = [];
         if (req.files) {
             for(const file of req.files) {
@@ -1029,6 +1040,69 @@ app.post('/api/admin/verify-action', async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: "Error updating status" });
+    }
+});
+
+// --- APPLICATION ROUTES ---
+
+// 1. Student: Apply for a property
+app.post('/api/applications', requireAuth, async (req, res) => {
+    try {
+        const { property_id, landlord_id, message } = req.body;
+
+        // Prevent double application
+        const existing = await Application.findOne({ property_id, student_id: req.user.userId });
+        if (existing) return res.status(400).json({ message: "You have already applied here!" });
+
+        const newApp = new Application({
+            property_id,
+            landlord_id,
+            student_id: req.user.userId,
+            message
+        });
+        await newApp.save();
+        res.json(newApp);
+    } catch (error) {
+        res.status(500).json({ message: "Application failed" });
+    }
+});
+
+// 2. Student: See my applications
+app.get('/api/applications/student', requireAuth, async (req, res) => {
+    try {
+        const apps = await Application.find({ student_id: req.user.userId })
+            .populate('property_id') // Get property details
+            .populate('landlord_id', 'username email'); // Get landlord info
+        res.json(apps);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching applications" });
+    }
+});
+
+// 3. Landlord: See who applied to my properties
+app.get('/api/applications/landlord', requireAuth, async (req, res) => {
+    try {
+        const apps = await Application.find({ landlord_id: req.user.userId })
+            .populate('student_id', 'username email profilePictureUrl bio') // Get student profile
+            .populate('property_id', 'title'); // Get property title
+        res.json(apps);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching applications" });
+    }
+});
+
+// 4. Landlord: Accept or Reject
+app.post('/api/applications/:id/status', requireAuth, async (req, res) => {
+    try {
+        const { status } = req.body; // 'accepted' or 'rejected'
+        const updatedApp = await Application.findByIdAndUpdate(
+            req.params.id, 
+            { status }, 
+            { new: true }
+        );
+        res.json(updatedApp);
+    } catch (error) {
+        res.status(500).json({ message: "Update failed" });
     }
 });
 
