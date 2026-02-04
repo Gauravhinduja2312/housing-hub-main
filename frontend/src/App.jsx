@@ -1522,6 +1522,49 @@ const ProfileView = () => {
     const [deletePassword, setDeletePassword] = useState('');
     const [deleteLoading, setDeleteLoading] = useState(false);
 
+
+    const [verificationFile, setVerificationFile] = useState("");
+    const [verificationStatus, setVerificationStatus] = useState(currentUser?.verificationStatus || 'none');
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) return toast.error("File too large! Max 5MB.");
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = () => {
+                setVerificationFile(reader.result);
+            };
+        }
+    };
+
+    const submitVerification = async () => {
+        if (!verificationFile) return toast.error("Please select an ID image first!");
+        setUploading(true);
+        try {
+            // Use currentUser.uid or currentUser._id depending on your backend
+            await api.post('/api/upload-verification', {
+                userId: currentUser.uid || currentUser._id, 
+                documentImage: verificationFile
+            });
+
+            toast.success("Documents submitted! Admin will review shortly.");
+            setVerificationStatus('pending');
+            
+            // Update local user so the UI updates immediately
+            const updatedUser = { ...currentUser, verificationStatus: 'pending' };
+            setCurrentUser(updatedUser);
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            
+        } catch (error) {
+            console.error(error);
+            toast.error("Upload failed. Try a smaller image.");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     useEffect(() => {
         const fetchStats = async () => {
             try {
@@ -1730,6 +1773,63 @@ const ProfileView = () => {
                                 </form>
                             )}
                         </div>
+
+                        {currentUser.userType === 'landlord' && (
+                            <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-6">
+                                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <ShieldCheck className="text-indigo-400"/> Landlord Verification
+                                </h2>
+                                
+                                {/* CASE 1: NOT VERIFIED */}
+                                {verificationStatus === 'none' && !currentUser.isVerified && (
+                                    <div>
+                                        <p className="text-slate-400 mb-4">To post properties, please upload a photo of your Government ID (Aadhaar/PAN).</p>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleFileChange} 
+                                            className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+                                        />
+                                        
+                                        {verificationFile && (
+                                            <img src={verificationFile} alt="Preview" className="mt-4 w-32 h-32 object-cover rounded-lg border border-slate-600" />
+                                        )}
+
+                                        <button 
+                                            onClick={submitVerification} 
+                                            disabled={uploading}
+                                            className="mt-4 bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-500 disabled:bg-slate-700"
+                                        >
+                                            {uploading ? "Uploading..." : "Submit for Verification"}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* CASE 2: PENDING */}
+                                {verificationStatus === 'pending' && (
+                                    <div className="p-4 bg-orange-900/20 border border-orange-700/50 rounded-lg text-orange-300 flex items-center gap-3">
+                                        <div className="animate-pulse text-2xl">⏳</div>
+                                        <div>
+                                            <p className="font-bold">Verification Pending</p>
+                                            <p className="text-sm">Your documents are under review. You will be notified once approved.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* CASE 3: APPROVED */}
+                                {(currentUser.isVerified || verificationStatus === 'approved') && (
+                                    <div className="p-4 bg-green-900/20 border border-green-700/50 rounded-lg text-green-300 flex items-center gap-3">
+                                        <ShieldCheck size={32} />
+                                        <div>
+                                            <p className="font-bold">Verified Landlord</p>
+                                            <p className="text-sm">You have full access to post properties.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {statCards.map(stat => (
                                 <div key={stat.label} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex items-center gap-4">
