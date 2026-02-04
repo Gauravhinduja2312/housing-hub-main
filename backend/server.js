@@ -11,8 +11,7 @@ const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
 const fetch = require('node-fetch');
 
-// --- SECURITY MIDDLEWARE (Paste this near the top) ---
-const jwt = require('jsonwebtoken'); // Ensure this is imported
+// --- SECURITY MIDDLEWARE (Paste this near the top) --- // Ensure this is imported
 
 const requireAuth = (req, res, next) => {
     // 1. Get the token from the header (Bearer <token>)
