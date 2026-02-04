@@ -130,7 +130,9 @@ app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.json()); // This was in your original file, good to have.
+// Allow up to 10MB so users can upload images
+app.use(express.json({ limit: '10mb' })); 
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // This was in your original file, good to have.
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -221,6 +223,42 @@ app.post('/api/signup', async (req, res) => {
         
         res.status(201).json({ token, userId: newUser._id, userType: newUser.user_type, username: newUser.username, email: newUser.email, profilePictureUrl: newUser.profilePictureUrl, bio: newUser.bio });
     } catch (error) { res.status(500).json({ message: 'Server error during signup.' }); }
+});
+
+// --- VERIFICATION ROUTE ---
+
+// Landlord uploads ID proof
+app.post('/api/upload-verification', async (req, res) => {
+    try {
+        const { userId, documentImage } = req.body;
+
+        if (!userId || !documentImage) {
+            return res.status(400).json({ message: "Missing user ID or document" });
+        }
+
+        // Find the user and update their status
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                verificationStatus: 'pending',   // Change status to 'Pending'
+                verificationDocument: documentImage // Save the image string
+            },
+            { new: true } // Return the updated user
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ 
+            message: "Verification submitted successfully! Please wait for Admin approval.", 
+            user: updatedUser 
+        });
+
+    } catch (error) {
+        console.error("Verification Error:", error);
+        res.status(500).json({ message: "Server error during upload" });
+    }
 });
 
 app.post("/api/login", async (req, res) => {
