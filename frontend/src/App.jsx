@@ -4,7 +4,6 @@ import { LogIn, UserPlus, Building, PlusCircle, Home, MapPin, Search, Edit, Tras
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
-import AdminDashboard from './AdminDashboard';
 
 // --- API & WEBSOCKET CONFIGURATION ---
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -286,7 +285,7 @@ const Sidebar = () => {
         ...(currentUser.userType === 'admin' 
             ? [{ icon: ShieldCheck, label: "Admin Panel", path: "/admin" }] 
             : []),
-            
+
         { icon: Building, label: "All Properties", path: "/properties" },
         { icon: MessageSquare, label: "Messages", path: "/messages" },
         currentUser.userType === 'landlord' 
