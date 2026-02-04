@@ -335,6 +335,7 @@ const Sidebar = () => {
 };
 
 const Header = () => {
+    const { currentUser } = useAuth();
     const { searchTerm, setSearchTerm } = useSearch();
     const { notifications, unreadCount, markAllAsRead } = useNotifications();
     const [showNotifications, setShowNotifications] = useState(false);
@@ -393,11 +394,13 @@ const Header = () => {
                         </div>
                     )}
                 </div>
-             {useAuth().currentUser?.userType === 'landlord' && useAuth().currentUser?.isVerified && (
+             {/* Use 'currentUser' directly instead of calling useAuth() here */}
+{currentUser?.userType === 'landlord' && currentUser?.isVerified && (
     <Link to="/add-property" className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
         <PlusCircle size={20} /><span>New Property</span>
     </Link>
-                )}
+)}
+            
             </div>
         </header>
     );
@@ -898,7 +901,7 @@ const AddPropertyView = () => {
             navigate('/profile'); // Send them to profile to verify
         }
     }, [currentUser, navigate]);
-    
+
     const [details, setDetails] = useState({ 
         title: '', description: '', address: '', city: '', price: '', 
         property_type: 'apartment', bedrooms: '', bathrooms: '', amenities: '',
