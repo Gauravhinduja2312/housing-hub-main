@@ -282,6 +282,11 @@ const Sidebar = () => {
     
     const navItems = [
         { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+
+        ...(currentUser.userType === 'admin' 
+            ? [{ icon: ShieldCheck, label: "Admin Panel", path: "/admin" }] 
+            : []),
+            
         { icon: Building, label: "All Properties", path: "/properties" },
         { icon: MessageSquare, label: "Messages", path: "/messages" },
         currentUser.userType === 'landlord' 
@@ -620,6 +625,15 @@ const ReviewSummary = ({ propertyId }) => {
 
 const DashboardView = () => {
     const { currentUser } = useAuth();
+
+    const navigate = useNavigate();
+    
+    useEffect(() => {
+        if (currentUser?.userType === 'admin') {
+            navigate('/admin');
+        }
+    }, [currentUser, navigate]);
+
     // Landlord state
     const [stats, setStats] = useState(null);
     // Student state
@@ -1925,6 +1939,100 @@ const ProfileView = () => {
 
 
 const AuthForm = ({ isLogin }) => {
+    // --- ADMIN DASHBOARD COMPONENT ---
+const AdminDashboard = () => {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // 1. Security Check
+        if (currentUser && currentUser.userType !== 'admin') {
+            navigate('/');
+            return;
+        }
+        fetchRequests();
+    }, [currentUser, navigate]);
+
+    const fetchRequests = async () => {
+        try {
+            // 2. Use 'api' instead of 'axios' to automatically send the Token
+            const { data } = await api.get('/api/admin/verifications'); 
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load requests");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAction = async (userId, action) => {
+        if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+        try {
+            await api.post('/api/admin/verify-action', { userId, action });
+            setRequests(requests.filter(req => req._id !== userId));
+            toast.success(`User ${action}d successfully!`);
+        } catch (error) {
+            toast.error("Action failed.");
+        }
+    };
+
+    if (loading) return <div className="p-8 text-white">Loading Admin Panel...</div>;
+
+    return (
+        <div className="min-h-screen p-8 text-white">
+            <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
+                <ShieldCheck className="text-indigo-500" size={32}/> Admin Verification Dashboard
+            </h1>
+
+            {requests.length === 0 ? (
+                <div className="text-slate-400 text-lg bg-slate-800/50 p-6 rounded-xl border border-slate-700">
+                    ✅ All caught up! No pending verifications.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {requests.map(user => (
+                        <div key={user._id} className="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-lg">
+                            <div className="flex items-center gap-4 mb-4">
+                                <img 
+                                    src={user.profilePictureUrl || `https://placehold.co/100x100/1e293b/a78bfa?text=${user.username.charAt(0)}`} 
+                                    className="h-12 w-12 rounded-full object-cover"
+                                    alt="User"
+                                />
+                                <div>
+                                    <h3 className="font-bold text-lg text-white">{user.username}</h3>
+                                    <p className="text-sm text-slate-400">{user.email}</p>
+                                    <span className="text-xs bg-orange-900/50 text-orange-200 px-2 py-1 rounded border border-orange-700 mt-1 inline-block">Pending Review</span>
+                                </div>
+                            </div>
+
+                            <div className="mb-4 bg-slate-900 p-2 rounded-lg">
+                                <p className="text-xs text-slate-500 mb-2 uppercase font-bold">ID Proof</p>
+                                {user.verificationDocument ? (
+                                    <a href={user.verificationDocument} target="_blank" rel="noopener noreferrer">
+                                        <img 
+                                            src={user.verificationDocument} 
+                                            alt="ID Proof" 
+                                            className="w-full h-32 object-cover rounded border border-slate-600 hover:opacity-80 transition"
+                                        />
+                                    </a>
+                                ) : (
+                                    <div className="h-32 flex items-center justify-center text-slate-600 text-sm">No Document Uploaded</div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3 mt-4">
+                                <button onClick={() => handleAction(user._id, 'approve')} className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold transition">Accept</button>
+                                <button onClick={() => handleAction(user._id, 'reject')} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg font-bold transition">Reject</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
     const { setCurrentUser } = useAuth();
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
