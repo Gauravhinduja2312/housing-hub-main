@@ -985,6 +985,42 @@ Here are the rules:
     }
 });
 
+// --- ADMIN ROUTES ---
+
+// 1. Get all pending verification requests
+app.get('/api/admin/verifications', async (req, res) => {
+    try {
+        // Fetch all users who are waiting for approval
+        const pendingUsers = await User.find({ verificationStatus: 'pending' });
+        res.json(pendingUsers);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching requests" });
+    }
+});
+
+// 2. Approve or Reject a Landlord
+app.post('/api/admin/verify-action', async (req, res) => {
+    try {
+        const { userId, action } = req.body; // action will be 'approve' or 'reject'
+
+        if (!['approve', 'reject'].includes(action)) {
+            return res.status(400).json({ message: "Invalid action" });
+        }
+
+        const status = action === 'approve' ? 'approved' : 'rejected';
+        const isVerified = action === 'approve'; // True only if approved
+
+        const updatedUser = await User.findByIdAndUpdate(userId, {
+            verificationStatus: status,
+            isVerified: isVerified
+        }, { new: true });
+
+        res.json({ message: `User ${status} successfully!`, user: updatedUser });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error updating status" });
+    }
+});
 
 server.listen(PORT, () => {
     console.log(`Backend server with WebSocket running on http://localhost:${PORT}`);

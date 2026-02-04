@@ -4,6 +4,7 @@ import { LogIn, UserPlus, Building, PlusCircle, Home, MapPin, Search, Edit, Tras
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
+import AdminDashboard from './AdminDashboard';
 
 // --- API & WEBSOCKET CONFIGURATION ---
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -1829,7 +1830,7 @@ const ProfileView = () => {
                             </div>
                         )}
 
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {statCards.map(stat => (
                                 <div key={stat.label} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex items-center gap-4">
@@ -2017,6 +2018,7 @@ const AppRoutes = () => {
                 <Route path="messages" element={<MessagesView />} />
                 <Route path="messages/:conversationId" element={<MessagesView />} />
                 <Route path="profile" element={<ProfileView />} />
+                <Route path="admin" element={<AdminDashboard />} />
             </Route>
             <Route path="/login" element={<AuthForm isLogin />} />
             <Route path="/signup" element={<AuthForm isLogin={false} />} />
